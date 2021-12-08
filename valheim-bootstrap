@@ -63,6 +63,10 @@ if [ "$VALHEIM_PLUS" = true ]; then
         write_valheim_plus_config
         write_bepinex_config "$vp_config_path" "$vp_install_path/BepInEx/plugins"
     fi
+
+    if [ -d "$vp_patchers_path" ]; then
+        write_bepinex_patchers "$vp_patchers_path" "$vp_install_path/BepInEx/patchers"
+    fi
 fi
 
 if [ "$BEPINEX" = true ]; then
@@ -71,6 +75,8 @@ if [ "$BEPINEX" = true ]; then
     if [ -d "$bepinex_config_path" ]; then
         write_bepinex_config "$bepinex_config_path" "$bepinex_install_path/BepInEx/plugins"
     fi
+
+    
 fi
 
 # Write server's adminlist.txt / bannedlist / permittedlist.txt

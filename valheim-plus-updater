@@ -31,7 +31,8 @@ main() {
         "$vp_config_path" \
         "extracted" \
         "$vp_install_path" \
-        "ValheimPlus"
+        "ValheimPlus" \
+        "$vp_patchers_path"
 }
 
 

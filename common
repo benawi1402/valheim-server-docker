@@ -29,6 +29,7 @@ vp_mergefile="$vp_download_path/merge"          # Signaling file created by valh
                                                 # server was updated and needs to be merged
                                                 # with ValheimPlus
 vp_config_path="/config/valheimplus"
+vp_patchers_path="/config/patchers"
 
 # BepInEx Mod
 bepinex_updater=/usr/local/bin/bepinex-updater
@@ -274,6 +275,20 @@ write_bepinex_config() {
     fi
 }
 
+write_bepinex_patchers() {
+    local mounted_path=$1
+    local target_path=$2
+
+    if [ -d "$mounted_path" ]; then
+        debug "Writing BepInEx patchers"
+
+        if [ -d "$mounted_path" ] && [ -d "$target_path" ]; then
+            info "Syncing BepInEx plugins from $mounted_path/ -> $target_path"
+            rsync -a --itemize-changes "$mounted_path/" "$target_path"
+        fi
+    fi
+}
+
 
 write_restart_file() {
     local mode
@@ -360,6 +375,7 @@ check_merge() {
     local config_path=$5
     local extraction_path=$6
     local mod_name=$7
+    local patchers_path=$8
 
     # The control file $mergefile is either created
     # in prepare_mod() if the mod is being installed for
@@ -368,7 +384,7 @@ check_merge() {
     # was downloaded and the mod needs to be applied to it.
     if [ -f "$mergefile" ]; then
         info "Valheim dedicated server or $mod_name mod got updated - extracting and merging installation files"
-        (set -e; extract_archive "$download_path" "$zipfile" && merge_mod "$install_path" "$config_path" "$download_path/$extraction_path")
+        (set -e; extract_archive "$download_path" "$zipfile" && merge_mod "$install_path" "$config_path" "$download_path/$extraction_path" "$patchers_path")
         # shellcheck disable=SC2181
         if [ $? -eq 0 ]; then
             debug "Successfully installed $mod_name mod"
@@ -395,6 +411,8 @@ merge_mod() {
     local mod_install_path="$1"
     local mod_config_path="$2"
     local mod_download_path="$3"
+    local patchers_path="$4"
+
     local config_file
     local pkg_config_dir
     local dest_file
@@ -412,6 +430,9 @@ merge_mod() {
     # if /config/<modname>/ does not exist copy the default config from the ZIP archive
     debug "Ensuring $mod_config_path/plugins exists"
     mkdir -p "$mod_config_path/plugins"
+
+    debug "Ensuring $patchers_path exists"
+    mkdir -p "$patchers_path"
     pkg_config_dir="$mod_install_path.tmp/BepInEx/config"
     if [ -d "$pkg_config_dir" ]; then
         cd "$pkg_config_dir" || fatal "Could not cd $pkg_config_dir"
@@ -438,6 +459,9 @@ merge_mod() {
     debug "Removing $pkg_config_dir and symlinking from $mod_config_path"
     rm -rf "$pkg_config_dir"
     ln -s "$mod_config_path" "$pkg_config_dir"
+
+    rm -rf "$mod_install_path/BepInEx/patchers"
+    ln -s "$patchers_path" "$mod_install_path/BepInEx/patchers"
     # move an existing copy of ValheimPlus to the .old extension
     if [ -d "$mod_install_path" ]; then
         debug "Moving old $mod_install_path -> $mod_install_path.old"
@@ -460,6 +484,7 @@ check_for_mod_update() {
     local extraction_path="$7"
     local install_path="$8"
     local mod_name="$9"
+    local patchers_path="${10}"
     local local_updated_at
     local local_installed_at
 
@@ -479,7 +504,7 @@ check_for_mod_update() {
         prepare_mod "$download_url" "$remote_updated_at" "$mergefile" "$download_path/$zipfile"
     fi
 
-    check_merge "$mergefile" "$download_path" "$zipfile" "$install_path" "$config_path" "$extraction_path" "$mod_name"
+    check_merge "$mergefile" "$download_path" "$zipfile" "$install_path" "$config_path" "$extraction_path" "$mod_name" "$patchers_path"
 }
 
 
